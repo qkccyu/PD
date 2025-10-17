@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="text-center mb-4">PyTorch Model Inference</h2>
+                    <form id="predict-form">
+                        <div class="mb-3">
+                            <label for="input" class="form-label">Input (comma-separated numbers, 10 values):</label>
+                            <input type="text" class="form-control" id="input" name="input" placeholder="0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Predict</button>
+                        </div>
+                    </form>
+                    <div id="result" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('predict-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const inputStr = document.getElementById('input').value;
+    const inputArr = inputStr.split(',').map(Number);
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '<div class="text-info">Predicting...</div>';
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input: inputArr })
+        });
+        const data = await response.json();
+        if (data.error) {
+            resultDiv.innerHTML = `<div class='alert alert-danger'>${data.error}</div>`;
+        } else {
+            resultDiv.innerHTML = `<div class='alert alert-success'>Predicted class: <b>${data.class}</b><br>Probabilities: ${data.probs.map(p => p.toFixed(4)).join(', ')}</div>`;
+        }
+    } catch (err) {
+        resultDiv.innerHTML = `<div class='alert alert-danger'>Error: ${err}</div>`;
+    }
+});
+</script>
+{% endblock %}

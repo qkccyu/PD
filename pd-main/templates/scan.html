@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+  <a href="/dashboard" class="text-dark text-decoration-none">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </a>
+  <h2 class="d-inline ms-3">New Toenail Scan</h2>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-7">
+    <div class="card p-4 shadow-sm">
+      <!-- Controls -->
+      <div class="d-flex justify-content-center gap-3 mb-3">
+        <button id="cameraBtn" class="btn btn-primary">
+          <i class="fa-solid fa-camera"></i> Use Camera
+        </button>
+        <button id="uploadBtn" class="btn btn-secondary">
+          <i class="fa-solid fa-upload"></i> Upload Image
+        </button>
+        <input type="file" id="imageInput" accept="image/*" class="d-none">
+      </div>
+
+      <!-- 🖼️ Image Box -->
+      <div id="imageContainer" class="border rounded d-flex align-items-center justify-content-center bg-dark bg-opacity-75" style="height:320px;">
+        <img id="imagePreview" class="img-fluid d-none rounded shadow-sm" style="max-height:300px; object-fit:contain;" alt="Preview">
+        <div id="placeholderText" class="text-light text-center">
+          <i class="fa-solid fa-image fa-2x mb-2 d-block"></i>
+          <span>No image uploaded yet</span>
+        </div>
+      </div>
+
+      <!-- 🧠 Loading Progress -->
+      <div id="loadingSection" class="text-center my-4 d-none">
+        <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+          <span class="visually-hidden">Analyzing...</span>
+        </div>
+        <p class="mt-3 mb-1 fw-semibold">Analyzing Image...</p>
+        <div class="progress mx-auto" style="height:10px;width:80%;">
+          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="text-center mt-4">
+        <button id="saveScanBtn" class="btn btn-success px-5 py-2">
+          <i class="fa-solid fa-floppy-disk"></i> Save Scan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card p-4 shadow-sm">
+      <h5>Patient Information</h5>
+      <div class="mb-3">
+        <label class="form-label">Select Patient</label>
+        <select id="patientSelect" class="form-select">
+          {% for p in patients %}
+          <option>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Notes</label>
+        <textarea id="scanNotes" class="form-control" rows="3" placeholder="Any observations or notes about this scan..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cameraBtn = document.getElementById('cameraBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const imageInput = document.getElementById('imageInput');
+const preview = document.getElementById('imagePreview');
+const placeholderText = document.getElementById('placeholderText');
+const loadingSection = document.getElementById('loadingSection');
+const progressBar = document.getElementById('progressBar');
+const saveBtn = document.getElementById('saveScanBtn');
+
+// ---------------- Camera (Future Integration)
+cameraBtn.addEventListener('click', () => {
+  alert("📷 Camera capture will be connected to Raspberry Pi soon!");
+});
+
+// ---------------- Upload Image
+uploadBtn.addEventListener('click', () => imageInput.click());
+
+imageInput.addEventListener('change', () => {
+  const file = imageInput.files[0];
+  if (!file) return;
+
+  // Show loading
+  simulateProgress(() => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.classList.remove('d-none');
+      placeholderText.classList.add('d-none');
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// ---------------- Simulated Progress ----------------
+function simulateProgress(callback) {
+  loadingSection.classList.remove('d-none');
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(interval);
+      setTimeout(() => {
+        loadingSection.classList.add('d-none');
+        progressBar.style.width = '0%';
+        if (callback) callback();
+      }, 500);
+    }
+    progressBar.style.width = progress + '%';
+  }, 300);
+}
+
+// ---------------- Save Scan ----------------
+saveBtn.addEventListener('click', () => {
+  const selectedPatient = document.getElementById('patientSelect').value;
+  const notes = document.getElementById('scanNotes').value.trim();
+  const imageExists = !preview.classList.contains('d-none');
+
+  if (!imageExists) {
+    alert("Please upload or capture an image first.");
+    return;
+  }
+
+  showToast(`Scan saved for ${selectedPatient}!`, "success");
+});
+
+// Simple toast utility
+function showToast(message, color="success") {
+  const oldToast = document.getElementById("toastMsg");
+  if (oldToast) oldToast.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "toastMsg";
+  toast.className = `alert alert-${color} shadow position-fixed top-0 start-50 translate-middle-x mt-3 text-center`;
+  toast.style.zIndex = "2000";
+  toast.style.fontWeight = "600";
+  toast.style.minWidth = "300px";
+  toast.style.transition = "all 0.3s ease-in-out";
+  toast.innerHTML = `<i class="fa-solid fa-check me-2"></i>${message}`;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 400);
+  }, 2500);
+}
+</script>
+
+<style>
+#imageContainer {
+  transition: all 0.3s ease;
+}
+.progress {
+  background-color: #e9ecef;
+  border-radius: 5px;
+}
+.spinner-border {
+  animation-duration: 0.8s;
+}
+</style>
+{% endblock %}

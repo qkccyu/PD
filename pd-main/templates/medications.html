@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Clinic Inventory</h2>
+
+<!-- Refresh Button -->
+<div class="d-flex justify-content-end mb-3">
+  <button class="btn btn-light" id="refreshBtn">
+    <i class="fa-solid fa-rotate"></i> Refresh
+  </button>
+</div>
+
+<!-- Container for medications -->
+<div class="row g-4" id="medicationsContainer"></div>
+
+<!-- Add Medication Modal -->
+<div class="modal fade" id="addMedicationModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Medication</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addMedicationForm">
+          <div class="mb-3">
+            <label class="form-label">Medicine Name</label>
+            <input type="text" class="form-control" id="medName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <input type="text" class="form-control" id="medType" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Stock Quantity</label>
+            <input type="number" class="form-control" id="medStock" required min="0">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Add Medication</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Toast Utility
+function showToast(message, color="success", icon="fa-check") {
+  const toast = document.createElement("div");
+  toast.className = `alert alert-${color} shadow position-fixed top-0 start-50 translate-middle-x mt-3 text-center`;
+  toast.style.zIndex = "2000";
+  toast.innerHTML = `<i class="fa-solid ${icon} me-2"></i>${message}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+// Load Medications
+function loadMedications() {
+  fetch('/api/medications')
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById('medicationsContainer');
+      container.innerHTML = '';
+
+      data.forEach(med => {
+        const imageSrc = med.image_url || '';
+        const imageArea = imageSrc
+          ? `<div class="image-box"><img src="${imageSrc}" class="rounded border med-image"></div>`
+          : `<div class="image-box upload-hover d-flex flex-column align-items-center justify-content-center border rounded"
+               onclick="triggerImageUpload(this)">
+               <i class="fa-solid fa-plus fa-2x text-muted"></i>
+               <small class="text-muted">Add Image</small>
+               <input type="file" class="d-none" accept="image/*" onchange="uploadImage(${med.id}, this)">
+             </div>`;
+
+        const card = document.createElement('div');
+        card.className = 'col-md-6';
+        card.innerHTML = `
+          <div class="card shadow-sm border-0 p-3 d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-grow-1 me-3">
+              <h5 class="card-title mb-1">${med.name}</h5>
+              <p class="text-muted mb-1">${med.type}</p>
+              <p><strong>In Stock:</strong> ${med.stock}</p>
+              <button class="btn btn-outline-danger btn-sm" onclick="deleteMedication(${med.id}, '${med.name}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+            ${imageArea}
+          </div>`;
+        container.appendChild(card);
+      });
+
+      // Add new medication card
+      const addCard = document.createElement('div');
+      addCard.className = 'col-md-6';
+      addCard.innerHTML = `
+        <div class="card h-100 d-flex align-items-center justify-content-center p-4 border-0 shadow-sm">
+          <div class="text-center">
+            <div class="bg-light rounded-circle p-3 mb-2 mx-auto" style="width:48px;height:48px;">
+              <i class="fa-solid fa-plus fa-2x"></i>
+            </div>
+            <button class="btn btn-link text-decoration-none" onclick="openAddModal()">Add New Medication</button>
+          </div>
+        </div>`;
+      container.appendChild(addCard);
+    });
+}
+
+// Add Medication
+function openAddModal() {
+  new bootstrap.Modal(addMedicationModal).show();
+}
+
+document.getElementById('addMedicationForm').onsubmit = e => {
+  e.preventDefault();
+  const name = medName.value.trim();
+  const type = medType.value.trim();
+  const stock = parseInt(medStock.value);
+
+  fetch('/api/medications', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, type, stock})
+  })
+  .then(() => {
+    bootstrap.Modal.getInstance(addMedicationModal).hide();
+    showToast("New Medication Added!","success");
+    loadMedications();
+  });
+};
+
+// Upload Image
+function triggerImageUpload(div) {
+  const input = div.querySelector('input[type=file]');
+  if (input) input.click();
+}
+
+function uploadImage(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  fetch(`/api/medications/${id}/image`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.error) showToast('Upload failed: ' + res.error, 'danger', 'fa-triangle-exclamation');
+    else { showToast('Image uploaded successfully!'); loadMedications(); }
+  })
+  .catch(() => showToast('Upload failed.', 'danger', 'fa-triangle-exclamation'));
+}
+
+// Delete Medication
+function deleteMedication(id, name) {
+  if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+  fetch(`/api/medications/${id}`, { method: 'DELETE' })
+    .then(() => {
+      showToast(`"${name}" deleted successfully!`, "danger", "fa-trash");
+      loadMedications();
+    });
+}
+
+// Refresh
+refreshBtn.onclick = () => { loadMedications(); showToast("Inventory Refreshed","secondary"); };
+window.addEventListener('DOMContentLoaded', loadMedications);
+</script>
+
+<style>
+.image-box {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+}
+.med-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+}
+</style>
+{% endblock %}

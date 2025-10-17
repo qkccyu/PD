@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MycoScan</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Make navbar fixed and always visible */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            background-color: white !important;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add body padding so content is not hidden behind navbar */
+        body {
+            padding-top: 70px;
+        }
+
+        /* Optional small blur effect */
+        .navbar.bg-white {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        /* Adjust icon button style */
+        .btn-light {
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fixed Navbar -->
+    <nav class="navbar navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <!-- Left side logo -->
+            <a href="/" class="navbar-brand mb-0 h1" style="text-decoration:none;color:inherit;">
+                <i class="fa-solid fa-heart-pulse"></i> MycoScan
+            </a>
+
+            <!-- Hide navigation on landing page -->
+            {% if request.path != '/' %}
+            <ul class="nav">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/dashboard') %}active{% endif %}" href="/dashboard">
+                        <i class="fa-solid fa-house"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/patients') %}active{% endif %}" href="/patients">
+                        <i class="fa-solid fa-user"></i> Patients
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/medications') %}active{% endif %}" href="/medications">
+                        <i class="fa-solid fa-cube"></i> Medications
+                    </a>
+                </li>
+            </ul>
+            {% endif %}
+
+            <!-- Rightmost icons -->
+            <div class="d-flex align-items-center ms-auto" style="gap:12px;">
+                {% if 'user_id' in session %}
+                    <span class="me-3">
+                        <i class="fa-solid fa-user"></i> {{ g.user.username if g.user }}
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger" title="Logout">
+                        <i class="fa-solid fa-sign-out-alt"></i> Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2" title="Login">
+                        <i class="fa-solid fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary" title="Register">
+                        <i class="fa-solid fa-user-plus"></i> Register
+                    </a>
+                {% endif %}
+                <a href="/aboutus" class="btn btn-light p-2" title="About Us">
+                    <i class="fa-solid fa-users"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
