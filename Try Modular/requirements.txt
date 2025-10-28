@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+SQLAlchemy
+Flask-Migrate
+psycopg2-binary
+python-dotenv
+Werkzeug
